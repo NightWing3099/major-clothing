@@ -1,15 +1,21 @@
-sign-in-container {
+.sign-in-container {
+  display: flex;
+  flex-direction: column;
+  width: 380px;
+  color: var(--color-text);
+
+  h2 {
+    margin: 20px 0;
+    color: var(--color-text);
+  }
+
+  span {
+    color: var(--color-text-secondary);
+  }
+
+  .buttons-container {
     display: flex;
-    flex-direction: column;
-    width: 380px;
-
-
-    h2 {
-        margin: 20px 0;
-    }
-
-    .buttons-container {
-        display: flex;
-        justify-content: space-between;
-    }
+    justify-content: space-between;
+    gap: 10px;
+  }
 }

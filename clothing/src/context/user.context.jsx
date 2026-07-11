@@ -1,27 +1,47 @@
-import { createContext, useState, useEffect } from "react";
-import { onAuthStateChangedListener, createUserDocumentFromAuth } from '../routes/utils/firebase/firebase.utils';
+import { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
+import { simulateAuthWithEmail } from '../db/database';
 
-// as the actual value you want to access
 export const UserContext = createContext({
-    setCurrentUser: () => null,
-    currentUser: null,
+  currentUser: null,
+  setCurrentUser: () => {},
+  signInWithEmail: () => {},
+  signOut: () => {},
 });
 
 export const UserProvider = ({ children }) => {
-    const [currentUser, setCurrentUser] = useState(null);
-    const value = { currentUser, setCurrentUser };
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('currentUser');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
 
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('currentUser');
+    }
+  }, [currentUser]);
 
-    useEffect(() =>{
-        const unsubscribe = onAuthStateChangedListener((user) => {
-           if(user) {
-            createUserDocumentFromAuth(user);
-           }
-            setCurrentUser(user);
-        });
+  const signInWithEmail = useCallback(async (email, password, userData) => {
+    const user = await simulateAuthWithEmail(email, password, userData);
+    setCurrentUser(user);
+    return user;
+  }, []);
 
-        return unsubscribe;
-    }, []);
+  const signOut = useCallback(() => {
+    setCurrentUser(null);
+  }, []);
 
-    return <UserContext.Provider value ={value}>{children}</UserContext.Provider>
+  const value = useMemo(
+    () => ({ currentUser, setCurrentUser, signInWithEmail, signOut }),
+    [currentUser, signInWithEmail, signOut]
+  );
+
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
+
+export const useUser = () => useContext(UserContext);

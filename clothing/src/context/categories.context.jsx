@@ -1,25 +1,40 @@
-import { createContext, useState, useEffect } from 'react';
-import { getCategoriesAndDocuments } from '../routes/utils/firebase/firebase.utils.jsx';
+import { createContext, useState, useEffect, useContext, useMemo } from 'react';
+import { getCategoriesMap, initializeDatabase } from '../db/database';
 
 export const CategoriesContext = createContext({
-    categoriesMap: {},
+  categoriesMap: {},
+  loading: false,
 });
 
 export const CategoriesProvider = ({ children }) => {
-    const [categoriesMap, setCategoriesMap] = useState({});
+  const [categoriesMap, setCategoriesMap] = useState({});
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const getCategoriesMap = async () => {
-            const categoryMap = await getCategoriesAndDocuments('categories');
-            setCategoriesMap(categoryMap);
-        }
-        getCategoriesMap();
-    }, []);
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        await initializeDatabase();
+        const map = await getCategoriesMap();
+        setCategoriesMap(map);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCategories();
+  }, []);
 
-    const value = { categoriesMap };
-    return (
-        <CategoriesContext.Provider value={value}>
-            {children}
-        </CategoriesContext.Provider>
-    );
+  const value = useMemo(
+    () => ({ categoriesMap, loading }),
+    [categoriesMap, loading]
+  );
+
+  return (
+    <CategoriesContext.Provider value={value}>
+      {children}
+    </CategoriesContext.Provider>
+  );
 };
+
+export const useCategories = () => useContext(CategoriesContext);
